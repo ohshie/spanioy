@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spanioy</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Spanioy</h1>
+    <nav class="zones">
+      <a class="zone active" href="#verbs">Verbs</a>
+    </nav>
+  </header>
+
+  <main id="verbs">
+    <div class="controls">
+      <div class="segmented" id="group" role="radiogroup" aria-label="Verb group">
+        <button role="radio" data-value="all" aria-checked="true">All</button>
+        <button role="radio" data-value="ar" aria-checked="false">-ar</button>
+        <button role="radio" data-value="er" aria-checked="false">-er</button>
+        <button role="radio" data-value="ir" aria-checked="false">-ir</button>
+      </div>
+      <div class="segmented" id="mode" role="radiogroup" aria-label="Forms per verb">
+        <button role="radio" data-value="one" aria-checked="true">One form</button>
+        <button role="radio" data-value="all" aria-checked="false">All forms</button>
+      </div>
+    </div>
+
+    <section class="card">
+      <h2 id="infinitive" class="infinitive"></h2>
+      <p id="meaning" class="meaning"></p>
+
+      <form id="answer-form" autocomplete="off">
+        <div id="rows" class="rows"></div>
+        <p id="feedback" class="feedback" aria-live="polite"></p>
+        <button id="submit" class="primary" type="submit">Check</button>
+      </form>
+    </section>
+  </main>
+
+  <footer>
+    Verb data: <a href="https://github.com/ghidinelli/fred-jehle-spanish-verbs">Fred Jehle Spanish Verb Database</a>,
+    <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/">CC BY-NC-SA 3.0</a>
+  </footer>
+
+  <script src="data/verbs.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
