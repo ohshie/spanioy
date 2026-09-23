@@ -1,11 +1,18 @@
 (() => {
   const PRONOUNS = ["yo", "tú", "él / ella / usted", "nosotros", "vosotros", "ellos / ellas / ustedes"];
   const TENSE = "present";
+  const ENDINGS = {
+    ar: ["-o", "-as", "-a", "-amos", "-áis", "-an"],
+    er: ["-o", "-es", "-e", "-emos", "-éis", "-en"],
+    ir: ["-o", "-es", "-e", "-imos", "-ís", "-en"],
+  };
 
   const $ = (id) => document.getElementById(id);
   const els = {
     infinitive: $("infinitive"),
     meaning: $("meaning"),
+    hint: $("hint"),
+    hintTable: $("hint-table"),
     form: $("answer-form"),
     rows: $("rows"),
     feedback: $("feedback"),
@@ -33,6 +40,29 @@
     return [...els.rows.querySelectorAll("input")];
   }
 
+  function renderHint(verbGroup) {
+    const title = document.createElement("div");
+    title.className = "hint-title";
+    title.textContent = `-${verbGroup} verbs`;
+    els.hintTable.replaceChildren(title, ...ENDINGS[verbGroup].flatMap((ending, i) => {
+      const p = document.createElement("span");
+      p.textContent = PRONOUNS[i];
+      const e = document.createElement("strong");
+      e.textContent = ending;
+      return [p, e];
+    }));
+  }
+
+  // Hover on desktop, press-and-hold on touch
+  const hint = els.hint.parentElement;
+  const showHint = (on) => hint.classList.toggle("open", on);
+  els.hint.addEventListener("pointerenter", (e) => e.pointerType === "mouse" && showHint(true));
+  els.hint.addEventListener("pointerleave", () => showHint(false));
+  els.hint.addEventListener("pointerdown", (e) => { if (e.pointerType !== "mouse") showHint(true); });
+  els.hint.addEventListener("pointerup", (e) => { if (e.pointerType !== "mouse") showHint(false); });
+  els.hint.addEventListener("pointercancel", () => showHint(false));
+  els.hint.addEventListener("contextmenu", (e) => e.preventDefault());
+
   function next() {
     const pool = window.VERBS.filter((v) => group === "all" || v.group === group);
     let verb, available, persons;
@@ -48,6 +78,7 @@
 
     els.infinitive.textContent = verb.inf;
     els.meaning.textContent = verb.en;
+    renderHint(verb.group);
     els.rows.className = "rows " + mode;
     els.rows.replaceChildren(...persons.map((p) => {
       const row = document.createElement("label");
