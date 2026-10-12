@@ -10,11 +10,12 @@
   <header class="top">
     <h1>Spanioy</h1>
     <nav class="zones">
-      <a class="zone active" href="#verbs">Verbs</a>
+      <a class="zone" href="#verbs">Verbs</a>
+      <a class="zone" href="#sentences">Sentences</a>
     </nav>
   </header>
 
-  <main id="verbs">
+  <main id="verbs" class="zone-page">
     <div class="controls">
       <div class="segmented" id="group" role="radiogroup" aria-label="Verb group">
         <button role="radio" data-value="all" aria-checked="true">All</button>
@@ -45,12 +46,71 @@
     </section>
   </main>
 
+  <main id="sentences" class="zone-page" hidden>
+    <div class="controls">
+      <div class="segmented" id="st-topic" role="radiogroup" aria-label="Topic">
+        <button role="radio" data-value="all" aria-checked="true">All</button>
+        <button role="radio" data-value="tener" aria-checked="false">tener</button>
+        <button role="radio" data-value="se" aria-checked="false">se</button>
+        <button role="radio" data-value="de" aria-checked="false">de</button>
+      </div>
+    </div>
+
+    <section class="card">
+      <h2 id="st-english" class="english"></h2>
+
+      <button id="st-hint" class="hint-button st-hint" type="button">Hint</button>
+      <div id="st-hints" class="st-hints" aria-live="polite">
+        <p id="st-skeleton" class="skeleton"></p>
+        <p id="st-words" class="word-bank"></p>
+      </div>
+
+      <form id="st-form" autocomplete="off">
+        <input id="st-answer" class="sentence-input" type="text" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="Type in Spanish" aria-label="Answer">
+        <p id="st-correct" class="answer"></p>
+        <p id="st-feedback" class="feedback" aria-live="polite"></p>
+        <button id="st-submit" class="primary" type="submit">Check</button>
+      </form>
+    </section>
+  </main>
+
   <footer>
-    Verb data: <a href="https://github.com/ghidinelli/fred-jehle-spanish-verbs">Fred Jehle Spanish Verb Database</a>,
-    <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/">CC BY-NC-SA 3.0</a>
+    <button id="credits-open" class="link-button" type="button">Credits</button>
   </footer>
 
+  <dialog id="credits" class="sheet" aria-labelledby="credits-title">
+    <button id="credits-close" class="close" type="button" aria-label="Close">&times;</button>
+    <h3 id="credits-title">Credits</h3>
+    <p>
+      Verbs: <a href="https://github.com/ghidinelli/fred-jehle-spanish-verbs">Fred Jehle Spanish Verb Database</a>,
+      <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/">CC BY-NC-SA 3.0</a>
+    </p>
+    <p>
+      Sentences: <a href="https://tatoeba.org">Tatoeba</a>,
+      <a href="https://creativecommons.org/licenses/by/2.0/fr/">CC BY 2.0 FR</a>
+    </p>
+  </dialog>
+
   <script src="data/verbs.js"></script>
+  <script src="data/sentences.js"></script>
   <script src="app.js"></script>
+  <script src="sentences.js"></script>
+  <script>
+    // Zones: #verbs (default), #sentences
+    function showZone() {
+      const id = document.getElementById(location.hash.slice(1))?.classList.contains("zone-page") ? location.hash.slice(1) : "verbs";
+      document.querySelectorAll(".zone-page").forEach((z) => (z.hidden = z.id !== id));
+      document.querySelectorAll(".zone").forEach((a) => a.classList.toggle("active", a.getAttribute("href") === "#" + id));
+      document.querySelector(`#${id} input:not([readonly])`)?.focus();
+    }
+    addEventListener("hashchange", showZone);
+    showZone();
+
+    const credits = document.getElementById("credits");
+    document.getElementById("credits-open").addEventListener("click", () => credits.showModal());
+    document.getElementById("credits-close").addEventListener("click", () => credits.close());
+    // Click on the backdrop closes it
+    credits.addEventListener("click", (e) => e.target === credits && credits.close());
+  </script>
 </body>
 </html>

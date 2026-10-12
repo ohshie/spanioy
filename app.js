@@ -147,6 +147,7 @@
 
   // Enter advances even if focus left the form
   document.addEventListener("keydown", (e) => {
+    if (els.form.closest("main").hidden || document.querySelector("dialog[open]")) return;
     if (e.key === "Enter" && checked && !els.form.contains(document.activeElement)) {
       e.preventDefault();
       next();
