@@ -13,6 +13,7 @@
   };
 
   let topic = "all";
+  let level = 0;
   let current = null;
   let checked = false;
   let hintLevel = 0;
@@ -48,7 +49,7 @@
   }
 
   function next() {
-    const pool = window.SENTENCES.filter((s) => topic === "all" || s.topics.includes(topic));
+    const pool = window.SENTENCES.filter((s) => s.level === level && (topic === "all" || s.topics.includes(topic)));
     let item;
     do item = pick(pool); while (pool.length > 1 && item === current);
 
@@ -112,12 +113,17 @@
     }
   });
 
-  const buttons = document.querySelectorAll("#st-topic button");
-  buttons.forEach((btn) => btn.addEventListener("click", () => {
-    buttons.forEach((b) => b.setAttribute("aria-checked", String(b === btn)));
-    topic = btn.dataset.value;
-    next();
-  }));
+  function segmented(id, onChange) {
+    const buttons = document.querySelectorAll(`#${id} button`);
+    buttons.forEach((btn) => btn.addEventListener("click", () => {
+      buttons.forEach((b) => b.setAttribute("aria-checked", String(b === btn)));
+      onChange(btn.dataset.value);
+      next();
+    }));
+  }
+
+  segmented("st-topic", (v) => (topic = v));
+  segmented("st-level", (v) => (level = Number(v)));
 
   next();
 })();
