@@ -25,12 +25,16 @@
   const stripAccents = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-  // Hints build up per click: 1 = skeleton, 2 = + shuffled words, 3+ = reveal one more word
+  // Hints build up per click: 1 = skeleton, 2 = + shuffled words, 3+ = reveal one more word.
+  // Shuffled and revealed words show their meaning on hover / hold.
+  let bank = [];
   function renderHint() {
     const tokens = current.es[0].split(" ");
     const revealed = Math.max(0, hintLevel - 2);
-    els.skeleton.textContent = hintLevel ? tokens.map((t, i) => (i < revealed ? t : mask(t))).join(" ") : "";
-    els.words.textContent = hintLevel >= 2 ? shuffle(tokens.map(bare)).join("  ·  ") : "";
+    els.skeleton.replaceChildren(...(hintLevel ? tokens : []).flatMap((t, i) =>
+      [i ? " " : "", i < revealed ? wordEl(t) : mask(t)]));
+    if (hintLevel === 2) bank = shuffle(tokens.map(bare));
+    els.words.replaceChildren(...(hintLevel >= 2 ? bank : []).flatMap((t, i) => [i ? "  ·  " : "", wordEl(t)]));
     const done = revealed >= tokens.length;
     els.hint.hidden = checked || done;
     els.hint.textContent = hintLevel ? "More" : "Hint";
@@ -77,13 +81,16 @@
     els.submit.textContent = "Next";
     els.hint.hidden = true;
 
-    if (answers.includes(given)) {
+    const match = answers.indexOf(given);
+    // Spanish sentence with per-word meanings (hover / hold a word)
+    renderWords(current.es[match >= 0 ? match : 0]);
+
+    if (match >= 0) {
       els.answer.classList.add("good");
       els.feedback.className = "feedback good";
       els.feedback.textContent = "Correct";
     } else {
       els.answer.classList.add("bad");
-      els.correct.textContent = current.es[0];
       els.feedback.className = "feedback bad";
       const accentsOnly = answers.some((a) => stripAccents(a) === stripAccents(given));
       els.feedback.textContent = accentsOnly ? "Check the accents" : "Incorrect";
@@ -91,12 +98,48 @@
     els.submit.focus();
   }
 
+  function renderWords(sentence) {
+    els.correct.replaceChildren(...sentence.split(" ").flatMap((t, i) => [i ? " " : "", wordEl(t)]));
+  }
+
+  // A word with its meaning in a popup, or plain text when it's not in the glossary
+  function wordEl(token) {
+    const word = document.createElement("span");
+    word.textContent = token;
+    const entry = window.GLOSSARY[bare(token).toLowerCase()];
+    if (!entry) return word;
+    word.className = "word";
+    const tip = document.createElement("span");
+    tip.className = "tip";
+    [entry, entry.alt].filter(Boolean).forEach((m, k) => {
+      const meaning = document.createElement("span");
+      meaning.className = "meaning-line" + (k ? " alt" : "");
+      meaning.textContent = m.g;
+      if (m.l) {
+        const base = document.createElement("em");
+        base.textContent = m.l;
+        meaning.append(base);
+      }
+      tip.append(meaning);
+    });
+    word.append(tip);
+    return word;
+  }
+
+  // Hover on desktop; press-and-hold on touch
+  [els.correct, els.skeleton, els.words].forEach((box) => {
+    box.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "mouse") return;
+      e.target.closest(".word")?.classList.add("open");
+    });
+    ["pointerup", "pointercancel", "pointerleave"].forEach((type) =>
+      box.addEventListener(type, () => box.querySelectorAll(".word.open").forEach((w) => w.classList.remove("open"))));
+    box.addEventListener("contextmenu", (e) => e.preventDefault());
+  });
+
   els.hint.addEventListener("click", () => {
     hintLevel++;
-    // Keep the shuffled order stable while revealing words
-    const order = els.words.textContent;
     renderHint();
-    if (hintLevel > 2) els.words.textContent = order;
     els.answer.focus();
   });
 
