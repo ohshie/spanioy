@@ -135,6 +135,8 @@
     els.submit.focus();
   }
 
+  $("skip").addEventListener("click", () => next());
+
   els.form.addEventListener("submit", (e) => {
     e.preventDefault();
     if (checked) return next();

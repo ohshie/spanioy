@@ -23,8 +23,10 @@ FREQ = "https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/conte
 OUT = pathlib.Path(__file__).resolve().parent.parent / "data" / "sentences.js"
 
 PER_TOPIC_LEVEL = 200
+# Level 0 keeps every sentence found, it is the smallest pool
+PER_TOPIC_LEVEL_0 = 10**6
 MAX_WORDS = 6
-LEVELS = [(0, 150), (1, 500), (2, 1500), (3, 5000)]
+LEVELS = [(0, 200), (1, 500), (2, 1500), (3, 5000)]
 TOPICS = {
     "tener": re.compile(r"\b(tengo|tienes|tiene|tenemos|tenéis|tienen)\b"),
     "se": re.compile(r"\bse\b"),
@@ -96,7 +98,8 @@ def main():
     chosen = set()
     for key in sorted(candidates):
         pool = sorted(candidates[key])
-        chosen.update(rng.sample(pool, min(PER_TOPIC_LEVEL, len(pool))))
+        cap = PER_TOPIC_LEVEL_0 if key[1] == 0 else PER_TOPIC_LEVEL
+        chosen.update(rng.sample(pool, min(cap, len(pool))))
 
     data = [items[en] for en in sorted(chosen)]
     OUT.write_text(

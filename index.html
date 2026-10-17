@@ -12,6 +12,7 @@
     <nav class="zones">
       <a class="zone" href="#verbs">Verbs</a>
       <a class="zone" href="#sentences">Sentences</a>
+      <a class="zone" href="#person">About a person</a>
     </nav>
   </header>
 
@@ -42,6 +43,7 @@
         <div id="rows" class="rows"></div>
         <p id="feedback" class="feedback" aria-live="polite"></p>
         <button id="submit" class="primary" type="submit">Check</button>
+        <button id="skip" class="link-button skip" type="button">Skip</button>
       </form>
     </section>
   </main>
@@ -73,9 +75,30 @@
 
       <form id="st-form" autocomplete="off">
         <input id="st-answer" class="sentence-input" type="text" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="Type in Spanish" aria-label="Answer">
-        <p id="st-correct" class="answer"></p>
+        <p id="st-correct" class="answer drill-correct"></p>
         <p id="st-feedback" class="feedback" aria-live="polite"></p>
         <button id="st-submit" class="primary" type="submit">Check</button>
+        <button id="st-skip" class="link-button skip" type="button">Skip</button>
+      </form>
+    </section>
+  </main>
+
+  <main id="person" class="zone-page" hidden>
+    <section class="card">
+      <h2 id="ps-english" class="english"></h2>
+
+      <button id="ps-hint" class="hint-button st-hint" type="button">Hint</button>
+      <div id="ps-hints" class="st-hints" aria-live="polite">
+        <p id="ps-skeleton" class="skeleton"></p>
+        <p id="ps-words" class="word-bank"></p>
+      </div>
+
+      <form id="ps-form" autocomplete="off">
+        <input id="ps-answer" class="sentence-input" type="text" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="Type in Spanish" aria-label="Answer">
+        <p id="ps-correct" class="answer drill-correct"></p>
+        <p id="ps-feedback" class="feedback" aria-live="polite"></p>
+        <button id="ps-submit" class="primary" type="submit">Check</button>
+        <button id="ps-skip" class="link-button skip" type="button">Skip</button>
       </form>
     </section>
   </main>
@@ -108,10 +131,13 @@
   <script src="data/verbs.js"></script>
   <script src="data/sentences.js"></script>
   <script src="data/glossary.js"></script>
+  <script src="data/person.js"></script>
   <script src="app.js"></script>
+  <script src="drill.js"></script>
   <script src="sentences.js"></script>
+  <script src="person.js"></script>
   <script>
-    // Zones: #verbs (default), #sentences
+    // Zones: #verbs (default), #sentences, #person
     function showZone() {
       const id = document.getElementById(location.hash.slice(1))?.classList.contains("zone-page") ? location.hash.slice(1) : "verbs";
       document.querySelectorAll(".zone-page").forEach((z) => (z.hidden = z.id !== id));

@@ -19,6 +19,8 @@ import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SENTENCES = ROOT / "data" / "sentences.js"
+PERSON = ROOT / "data" / "person.js"
+VERBS = ROOT / "data" / "verbs.js"
 OUT = ROOT / "data" / "glossary.js"
 DICT_URL = "https://kaikki.org/dictionary/Spanish/kaikki.org-dictionary-Spanish.jsonl"
 FREQ_URL = "https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/es/es_50k.txt"
@@ -70,20 +72,45 @@ OVERRIDES = {
     "también": ("also, too", None), "por": ("for, by, through", None), "para": ("for, to", None),
     "con": ("with", None), "sin": ("without", None),
     "llama": ("calls; is called", "llamar"), "café": ("coffee", None),
-    "tía": ("aunt", None), "tío": ("uncle", None), "vete": ("go away!", "irse"),
+    "escuela": ("school", None), "médicas": ("doctors; medical", "médico"),
+    "chinas": ("Chinese", "chino"), "chinos": ("Chinese", "chino"), "tía": ("aunt", None), "tío": ("uncle", None), "vete": ("go away!", "irse"),
 }
 # Hand-written meanings for base words whose first dictionary sense is not the common one
-LEMMA_OVERRIDES = {"deber": "must, should; to owe", "solo": "alone, only"}
+LEMMA_OVERRIDES = {"deber": "must, should; to owe", "solo": "alone, only", "profesor": "teacher, professor"}
 TOKEN = re.compile(r"[A-Za-záéíóúüñÁÉÍÓÚÜÑ]+")
 
 
+def load(path, name):
+    text = path.read_text(encoding="utf-8")
+    return json.loads(text.split(f"window.{name} = ", 1)[1].strip().rstrip(";"))
+
+
 def vocabulary():
-    data = json.loads(SENTENCES.read_text(encoding="utf-8").split("window.SENTENCES = ", 1)[1].rstrip(";\n"))
-    return {t.lower() for item in data for es in item["es"] for t in TOKEN.findall(es)}
+    data = load(SENTENCES, "SENTENCES")
+    words = {t.lower() for item in data for es in item["es"] for t in TOKEN.findall(es)}
+    # "About a person" drill: its word lists plus present forms of its verbs
+    person = load(PERSON, "PERSON")
+    verbs = {v["inf"]: v["tenses"]["present"] for v in load(VERBS, "VERBS")}
+    spanish = [n for g in person["names"].values() for n in g]
+    for group in ("jobs", "countries", "cities", "languages", "places"):
+        for item in person[group]:
+            for field in ("es", "natEs"):
+                value = item.get(field, [])
+                spanish += value if isinstance(value, list) else [value]
+    words |= {t.lower() for x in spanish for t in TOKEN.findall(x)}
+    words |= {t for v in person["verbs"] for form in verbs[v] for t in TOKEN.findall(form)}
+    words |= {"años", "de", "en", "y", "me", "te", "se", "nos", "os"}
+    return words
 
 
 def short(gloss):
-    gloss = re.sub(r"\s*\([^)]*\)", "", re.split(r";", gloss)[0]).strip().rstrip(".")
+    # Drop bracketed notes, innermost first: "Cuba (a country (island) in ...)" -> "Cuba"
+    while True:
+        stripped = re.sub(r"\s*\([^()]*\)", "", gloss)
+        if stripped == gloss:
+            break
+        gloss = stripped
+    gloss = re.split(r";", gloss.replace("(", "").replace(")", ""))[0].strip().rstrip(".")
     # Long meanings: keep the first item (dog, domesticated for ... -> dog)
     if len(gloss) > 30 and "," in gloss:
         gloss = gloss.split(",")[0]
@@ -125,12 +152,18 @@ def main():
                 if not base:
                     lemma_senses.setdefault((w, e.get("pos")), s["glosses"][-1])
     needed = {k for v in forms.values() for k in v} - set(lemma_senses)
+    base_of = {}  # (word, pos) -> final base word when reached through a chain
     for (lemma, pos) in list(lemma_senses) + list(needed):
         if lemma in LEMMA_OVERRIDES:
             lemma_senses[(lemma, pos)] = LEMMA_OVERRIDES[lemma]
 
-    # Pass 2: glosses of base words not covered in pass 1
-    if needed:
+    # Further passes: glosses of base words not covered yet. A base that is itself only a form
+    # of another word is followed (abogadas -> abogada -> abogado), up to 3 steps.
+    redirect = {}  # (word, pos) -> (base, pos)
+    for _ in range(3):
+        if not needed:
+            break
+        found = {}
         with open(path, encoding="utf-8") as f:
             for line in f:
                 e = json.loads(line)
@@ -138,9 +171,29 @@ def main():
                 if e.get("pos") in SKIP_POS or key not in needed or key in lemma_senses:
                     continue
                 for s in e.get("senses", []):
-                    if usable(s) and not s.get("form_of"):
+                    if not usable(s):
+                        continue
+                    base = s.get("form_of", [{}])[0].get("word")
+                    if not base:
                         lemma_senses[key] = s["glosses"][-1]
                         break
+                    found.setdefault(key, (base.lower(), key[1]))
+        new = {k: v for k, v in found.items() if k not in lemma_senses}
+        redirect.update(new)
+        needed = set(new.values()) - set(lemma_senses)
+
+    def final(key):
+        for _ in range(4):
+            if key in lemma_senses or key not in redirect:
+                break
+            key = redirect[key]
+        return key
+
+    for key in list(redirect):
+        end = final(key)
+        if end in lemma_senses and key not in lemma_senses:
+            lemma_senses[key] = lemma_senses[end]
+            base_of[key] = end[0]
 
     glossary = {}
     for w, cands in forms.items():
@@ -152,17 +205,18 @@ def main():
             continue
         closed = [c for c in cands if c[0] == w and c[1] in CLOSED_POS]
         # Most frequent base word wins (pies -> pie "foot", not piar); ties keep dictionary order
-        ordered = sorted(cands, key=lambda c: (rank.get(c[0], 10**9), cands.index(c)))
+        ordered = sorted(cands, key=lambda c: (rank.get(base_of.get(c, c[0]), 10**9), cands.index(c)))
         lemma, pos = closed[0] if closed else ordered[0]
         entry = {"g": short(lemma_senses[(lemma, pos)])}
         if lemma != w:
-            entry["l"] = lemma
+            entry["l"] = base_of.get((lemma, pos), lemma)
         alt = next((c for c in ordered if c[0] != lemma and rank.get(c[0], 10**9)
                     <= (ALT_MAX_RANK_VERB if c[1] == "verb" else ALT_MAX_RANK)
                     and short(lemma_senses[c]).lower() != w and c[1] != "name"
                     and not re.search(r"surname|given name", lemma_senses[c])), None)
         if alt:
-            entry["alt"] = {"g": short(lemma_senses[alt]), **({"l": alt[0]} if alt[0] != w else {})}
+            alt_base = base_of.get(alt, alt[0])
+            entry["alt"] = {"g": short(lemma_senses[alt]), **({"l": alt_base} if alt_base != w else {})}
         glossary[w] = entry
 
     for w, (g, base) in OVERRIDES.items():

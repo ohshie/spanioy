@@ -9,6 +9,7 @@
   --accent-hover: #0077ed;
   --good: #1d8f3a;
   --bad: #d70015;
+  --warn: #c93400;
   --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 30px rgba(0,0,0,.06);
 }
 
@@ -24,6 +25,7 @@
     --accent-hover: #47a6ff;
     --good: #30d158;
     --bad: #ff453a;
+    --warn: #ff9f0a;
     --shadow: none;
   }
 }
@@ -386,7 +388,7 @@ footer {
 .sentence-input.good { border-color: var(--good); box-shadow: none; }
 .sentence-input.bad  { border-color: var(--bad);  box-shadow: none; }
 
-#st-correct { margin: 12px 0 0; }
+.drill-correct { margin: 12px 0 0; }
 
 .st-hint { margin-top: 14px; }
 .st-hint[hidden] { display: none; }
@@ -404,7 +406,7 @@ footer {
 .word-bank { font-size: 15px; color: var(--muted); }
 
 /* Per-word meanings */
-#st-correct, .st-hints {
+.drill-correct, .st-hints {
   font-size: 18px;
   user-select: none;
   -webkit-user-select: none;
@@ -459,3 +461,21 @@ footer {
 }
 
 @media (hover: none) { .word:hover .tip { opacity: 0; visibility: hidden; } .word.open .tip { opacity: 1; visibility: visible; } }
+
+.skip { display: block; margin: 10px auto 0; font-size: 14px; }
+.skip[hidden] { display: none; }
+
+/* Mistakes */
+.answer-view { min-height: 54px; user-select: text; }
+.answer-view .miss,
+.answer-view .accent-miss {
+  text-decoration: underline wavy var(--bad);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 5px;
+}
+.answer-view .accent-miss { text-decoration-color: var(--warn); }
+.drill-correct .fix {
+  background: color-mix(in srgb, var(--good) 16%, transparent);
+  border-radius: 5px;
+  padding: 0 3px;
+}
