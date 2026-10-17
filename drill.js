@@ -140,7 +140,7 @@ window.makeDrill = (prefix, nextItem, glossary = {}) => {
     els.skip.hidden = false;
     hintLevel = 0;
     renderHint();
-    els.answer.focus();
+    els.answer.focus({ preventScroll: true });
   }
 
   function check() {
@@ -201,10 +201,14 @@ window.makeDrill = (prefix, nextItem, glossary = {}) => {
   els.hint.addEventListener("click", () => {
     hintLevel++;
     renderHint();
-    els.answer.focus();
+    els.answer.focus({ preventScroll: true });
   });
 
   els.skip.addEventListener("click", next);
+
+  // Tapping Skip / Hint must not take focus from the input: on iOS that closes the
+  // keyboard, and focusing again reopens it and scrolls the page
+  [els.skip, els.hint].forEach((b) => b.addEventListener("mousedown", (e) => e.preventDefault()));
 
   els.form.addEventListener("submit", (e) => {
     e.preventDefault();

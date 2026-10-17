@@ -100,7 +100,7 @@
     els.feedback.className = "feedback";
     els.feedback.textContent = "";
     els.submit.textContent = "Check";
-    inputs()[0].focus();
+    inputs()[0].focus({ preventScroll: true });
   }
 
   function check() {
@@ -136,6 +136,8 @@
   }
 
   $("skip").addEventListener("click", () => next());
+  // Keep focus in the input so the iOS keyboard stays open (no page jump)
+  $("skip").addEventListener("mousedown", (e) => e.preventDefault());
 
   els.form.addEventListener("submit", (e) => {
     e.preventDefault();
